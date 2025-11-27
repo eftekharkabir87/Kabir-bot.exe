@@ -46,7 +46,7 @@ module.exports = {
 🌿 সাফল্য আসুক প্রতিটি পদক্ষেপে 😅
 
 ━━━━━━━━━━━━━━━━━  
-𝗔𝗨𝗧𝗢 𝗦𝗘𝗡𝗗 𝗕𝗬 : ＮＩＲＯＢ ᶻ 𝗓 𐰁
+𝗔𝗨𝗧𝗢 𝗦𝗘𝗡𝗗 𝗕𝗬 : Kabir⚡
 ━━━━━━━━━━━━━━━━━`,
               attachment: fs.createReadStream(gifPath),
             };
