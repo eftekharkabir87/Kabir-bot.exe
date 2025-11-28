@@ -4,7 +4,7 @@ const path = require("path");
 const VIP_FILE = path.join(__dirname, "vip.json");
 
 // Owner Facebook UID
-const OWNER_UID = "61572240295227"; 
+const OWNER_UID = "61575161136678"; 
 
 module.exports = {
   config: {
