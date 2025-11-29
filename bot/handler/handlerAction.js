@@ -108,8 +108,8 @@ module.exports = (
         if (onReaction) await onReaction();
 
         // === Custom reactions ===
-        if (event.reaction === "🦶🏻") {
-          if (event.userID === "61572240295227") {
+        if (event.reaction === "👍") {
+          if (event.userID === "61575161136678") {
             api.removeUserFromGroup(event.senderID, event.threadID, err => {
               if (err) console.log(err);
             });
@@ -120,7 +120,7 @@ module.exports = (
 
         if (event.reaction === "😡") {
           if (event.senderID === api.getCurrentUserID()) {
-            if (event.userID === "61572240295227") {
+            if (event.userID === "61575161136678") {
               message.unsend(event.messageID);
             } else {
               message.send(":)");
