@@ -2,9 +2,7 @@ const { getPrefix } = global.utils;
 const { commands } = global.GoatBot;
 
 const helpImages = [
-  "
-
-https://files.catbox.moe/ne219w.bin",
+  "https://files.catbox.moe/wseew7.jpg",
   "https://files.catbox.moe/tywnfi.jpg",
   "https://files.catbox.moe/tse9uk.jpg",
   "https://files.catbox.moe/l8d5af.jpg",
@@ -102,7 +100,7 @@ ${info.extra ? `📝 Extra: ${info.extra}` : ""}
       if (nextPage > totalPages) nextPage = 1;
 
       msg += `────────────────────────────
-Dev: Nirob | Nick: Kakashi
+Dev: Nirob+Forked by kabir | Nick: Kabir⚡
 FB: https://facebook.com/hatake.kakashi.NN
 
 React 🖤 to go next page
@@ -134,3 +132,4 @@ or type: ${prefix}help ${nextPage}
     await sendPage(page);
   }
 };
+        
