@@ -14,7 +14,7 @@
 	"notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
 	"nickNameBot": "Olivia😺",
 	"prefix": "-",
-	"api":""api": "api": "https://www.mahabub-apis.fun"
+	"api": "https://www.mahabub-apis.fun"
 	"adminOnly": {
 		"enable": false,
 		"ignoreCommand": [61575161136678]
