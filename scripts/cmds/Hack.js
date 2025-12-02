@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "hack",
     author: "jun",
-    countDown: 5,
+    countDown: 5, 
     role: 2,
     category: "fun",
     shortDescription: {
