@@ -21,7 +21,7 @@
 	},
 	"adminBot": [    
 	"61575161136678",
-    "61568310736486"
+    ""
   ],
 	"whiteListMode": {
 		"enable": false,
@@ -35,7 +35,7 @@
 		"how_it_work": "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
 	},
 	"database": {
-		"type": "sqlite",
+		"type": "Mongodb",
 		"uriMongodb": "mongodb+srv://arafatas9999:Arafat69@arafat.9sc1rkl.mongodb.net/?retryWrites=true&w=majority&appName=Arafat",
 		"autoSyncWhenStart": false,
 		"autoRefreshThreadInfoFirstTime": true,
