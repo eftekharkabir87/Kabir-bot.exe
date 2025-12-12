@@ -18,7 +18,7 @@ category: "config",
 // -------------------------
 catboxVideos: [
     "https://files.catbox.moe/wgdy1d.mp4",
-    "https://files.catbox.moe/ex2p6n.mp4",
+    "https://files.catbox.moe/eoqquk.mp4",
     "https://files.catbox.moe/xhqmru.mp4"
 ],
 // -------------------------
