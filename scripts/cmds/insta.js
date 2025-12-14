@@ -18,7 +18,7 @@ module.exports = {
     if (!name)
       return message.reply(`Please enter video link`);
     else {
-      const BASE_URL = `https://www.nguyenmanh.name.vn/api/igDL?url=${encodeURIComponent(name)}=&apikey=SyryTUZn`;
+      const BASE_URL = `https://l.facebook.com/l.php?u=https%3A%2F%2Ffast-dev-apis.vercel.app%2Finstadl&h=AT3kg-RPlZp7_RoA0x-Ko2Dkq8tGMyVu4W87KcBS38dH8SpwC_0__7txjF09Yo3dl83Jbps0CQIQbVOKgBcOhE126CrQTXmluiMOSHfT8g5czLHRYpTtS1lqu0GdAA8&s=1`;
 
  await message.reply("Downloading video for you");
 
