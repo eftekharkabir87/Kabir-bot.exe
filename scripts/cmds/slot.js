@@ -1,121 +1,81 @@
-const { EmbedBuilder } = require("discord.js");
-const fs = require("fs");
+/**
+ * SLOT MACHINE FOR MESSENGER GOAT BOT
+ * Author: kabir
+ * Description: 50/50 slot machine with jackpot, animation, leaderboard, anti-spam
+ */
 
-const dbPath = "./slotData.json";
+const fs = require("fs");
+const path = require("path");
+
+const dbPath = path.join(__dirname, "slotData.json"); // Database file
 
 module.exports = {
   name: "slot",
-  aliases: ["spin"],
   description: "🎰 50/50 Slot Machine",
   cooldown: 5,
 
-  async execute(message) {
+  async execute(bot, event) {
+    const senderID = event.sender.id;
     const icons = ["🍒", "🍋", "🍉", "🍇", "💎", "🔔"];
 
-    // ---- load db ----
+    // ---- load database ----
     if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, "{}");
-    const db = JSON.parse(fs.readFileSync(dbPath));
+    const db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
 
-    if (!db[message.author.id]) {
-      db[message.author.id] = {
-        wins: 0,
-        jackpots: 0,
-        losses: 0,
-        plays: 0
-      };
+    if (!db[senderID]) db[senderID] = { wins: 0, jackpots: 0, losses: 0, plays: 0 };
+
+    // ---- anti-spam ----
+    if (!bot.slotRunning) bot.slotRunning = new Set();
+    if (bot.slotRunning.has(senderID)) {
+      return bot.sendMessage(senderID, { text: "⏳ Wait! Your previous spin is still running." });
     }
-
-    // ---- anti spam ----
-    if (!message.client.slotRunning) message.client.slotRunning = new Set();
-    if (message.client.slotRunning.has(message.author.id)) return;
-    message.client.slotRunning.add(message.author.id);
+    bot.slotRunning.add(senderID);
 
     // ---- spin logic 50/50 ----
-    const isWin = Math.random() < 0.5; // 50% chance
-    const isJackpot = isWin && Math.random() < 0.2; // 20% of wins = jackpot
+    const isWin = Math.random() < 0.5;
+    const isJackpot = isWin && Math.random() < 0.2;
 
     const roll = () => icons[Math.floor(Math.random() * icons.length)];
     const finalRolls = [roll(), roll(), roll()];
 
     if (isWin) {
-      if (isJackpot) {
-        finalRolls[0] = finalRolls[1] = finalRolls[2]; // all same for jackpot
-      } else {
-        // 2 same for almost win
-        finalRolls[0] = finalRolls[1];
-      }
+      if (isJackpot) finalRolls[0] = finalRolls[1] = finalRolls[2];
+      else finalRolls[0] = finalRolls[1];
     }
 
-    db[message.author.id].plays++;
-    if (isWin) db[message.author.id].wins++;
-    if (!isWin) db[message.author.id].losses++;
-    if (isJackpot) db[message.author.id].jackpots++;
-
+    db[senderID].plays++;
+    if (isWin) db[senderID].wins++;
+    if (!isWin) db[senderID].losses++;
+    if (isJackpot) db[senderID].jackpots++;
     fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 
-    // ---- embed + animation ----
-    const spinSounds = [
-      "🔊 *trrrr*",
-      "🔊 *trrrr trrrr*",
-      "🔊 *rrrrrr*",
-      "🔊 *click*"
-    ];
-
-    const baseEmbed = new EmbedBuilder()
-      .setAuthor({
-        name: "🎰 SLOT MACHINE",
-        iconURL: message.author.displayAvatarURL({ dynamic: true })
-      })
-      .setColor("#5865F2")
-      .setDescription("🔊 *starting...*\n\n`⏳ | ⏳ | ⏳`")
-      .setFooter({ text: "Spinning..." });
-
-    const slotMsg = await message.reply({ embeds: [baseEmbed] });
-
+    // ---- fake animation ----
+    const spinSounds = ["🔊 trrrr", "🔊 trrrr trrrr", "🔊 rrrrrr", "🔊 click"];
     let step = 0;
     const frames = 4;
 
-    const interval = setInterval(() => {
-      step++;
-      const sound = spinSounds[Math.min(step - 1, spinSounds.length - 1)];
-      const display = `\`${roll()} | ${roll()} | ${roll()}\``;
+    const spinAnimation = async () => {
+      if (step < frames) {
+        step++;
+        const display = `${roll()} | ${roll()} | ${roll()}`;
+        const text = `${spinSounds[Math.min(step - 1, spinSounds.length - 1)]}\n\n${display}`;
+        await bot.sendMessage(senderID, { text });
+        setTimeout(spinAnimation, 650);
+      } else {
+        // ---- final result ----
+        let resultText = `${finalRolls.join(" | ")}\n\n`;
 
-      const animEmbed = EmbedBuilder.from(baseEmbed)
-        .setDescription(`${sound}\n\n${display}`)
-        .setColor(step % 2 === 0 ? "#00ffee" : "#ff00ff");
+        if (isJackpot) resultText += "💥 JACKPOT! BIG WIN! 💎🔥";
+        else if (isWin) resultText += "✨ Nice! You Won!";
+        else resultText += "❌ You Lost! Try again.";
 
-      slotMsg.edit({ embeds: [animEmbed] });
+        resultText += `\n\nPlays: ${db[senderID].plays} | Wins: ${db[senderID].wins} | Losses: ${db[senderID].losses} | Jackpots: ${db[senderID].jackpots}`;
 
-      if (step >= frames) {
-        clearInterval(interval);
-
-        let resultText = `\`${finalRolls.join(" | ")}\`\n\n`;
-        let color = "#ff5555";
-
-        if (isJackpot) {
-          resultText += "💥 **JACKPOT! BIG WIN!** 💎🔥\n🔔 *DING DING DING!*";
-          color = "#00ff99";
-        } else if (isWin) {
-          resultText += "✨ **Nice! You Won!**";
-          color = "#ffaa00";
-        } else {
-          resultText += "❌ **You Lost! Try again.**";
-        }
-
-        const finalEmbed = new EmbedBuilder()
-          .setAuthor({
-            name: "🎰 SLOT RESULT",
-            iconURL: message.author.displayAvatarURL({ dynamic: true })
-          })
-          .setDescription(resultText)
-          .setColor(color)
-          .setFooter({
-            text: `Plays: ${db[message.author.id].plays} | Wins: ${db[message.author.id].wins} | Losses: ${db[message.author.id].losses} | Jackpots: ${db[message.author.id].jackpots}`
-          });
-
-        slotMsg.edit({ embeds: [finalEmbed] });
-        message.client.slotRunning.delete(message.author.id);
+        await bot.sendMessage(senderID, { text: resultText });
+        bot.slotRunning.delete(senderID);
       }
-    }, 650);
-  }
+    };
+
+    spinAnimation();
+  },
 };
