@@ -59,11 +59,11 @@ module.exports = {
           // WIN 3%
           result = "🎉 YOU WIN!";
           profit = bet * 2;
-        } else if (chance <= 5) {
+        } else if (chance <= 5.5) {
           // LOSS 2%
           result = "❌ YOU LOST!";
           profit = -bet;
-        } else if (chance <= 6) {
+        } else if (chance <= 5.7) {
           // DRAW 1%
           result = "⚖️ DRAW!";
           profit = 0;
