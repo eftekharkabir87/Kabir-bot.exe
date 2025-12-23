@@ -3,65 +3,77 @@ module.exports = {
   aliases: ["banish"],
   category: "moderation",
   description: "Ban or Unban a user",
-  usage: "ban @user reason | ban unban userID",
+  usage: "ban @user reason | ban unban userI
 
-  async execute(message, args) {
-    // Permission check
-    if (!message.member.permissions.has("BanMembers")) {
-      return message.reply("❌ তোর Ban permission নাই!");
-    }
+const fs = require("fs");
+const path = "./banData.json";
 
-    if (!message.guild.members.me.permissions.has("BanMembers")) {
-      return message.reply("❌ Bot এর Ban permission নাই!");
-    }
-
-    // ===== UNBAN PART =====
-    if (args[0] === "unban") {
-      const userId = args[1];
-      if (!userId) {
-        return message.reply("❌ User ID দে! (ban unban userID)");
-      }
-
-      try {
-        await message.guild.members.unban(userId);
-        return message.channel.send(
-          `♻️ **UNBAN SUCCESS**\n🆔 User ID: ${userId}`
-        );
-      } catch (err) {
-        return message.reply("❌ Invalid User ID অথবা user ban করা নেই!");
-      }
-    }
-
-    // ===== BAN PART =====
-    const member =
-      message.mentions.members.first() ||
-      message.guild.members.cache.get(args[0]);
-
-    if (!member) {
-      return message.reply("❌ Ekta user mention কর বা ID দে!");
-    }
-
-    if (member.id === message.author.id) {
-      return message.reply("😂 নিজেকে নিজে ban করতে পারবি না!");
-    }
-
-    if (member.roles.highest.position >= message.member.roles.highest.position) {
-      return message.reply("❌ তোর role এর উপরে role আছে, ban করা যাবে না!");
-    }
-
-    if (!member.bannable) {
-      return message.reply("❌ এই user কে ban করা যাবে না!");
-    }
-
-    const reason = args.slice(1).join(" ") || "No reason provided";
-
+// Load ban data
+function loadBanData() {
+    if (!fs.existsSync(path)) return {};
     try {
-      await member.ban({ reason });
-      message.channel.send(
-        `🔨 **BAN SUCCESS**\n👤 User: ${member.user.tag}\n📄 Reason: ${reason}`
-      );
-    } catch (err) {
-      message.reply("❌ User কে ban করা যায়নি!");
+        return JSON.parse(fs.readFileSync(path, "utf-8"));
+    } catch {
+        return {};
     }
-  },
+}
+
+// Save ban data
+function saveBanData(data) {
+    fs.writeFileSync(path, JSON.stringify(data, null, 4));
+}
+
+// List of admin IDs
+const admins = ["1234567890", "0987654321"]; // <-- Add your admin IDs here
+
+module.exports = {
+    config: {
+        name: "ban",
+        aliases: ["unban"],
+        description: "Admin-only Ban/Unban command for Goat Bot",
+        usage: "!ban <userID> [reason] or !unban <userID>",
+        author: "Arijit (Styled by GPT-5)",
+    },
+
+    run: async (bot, message, args) => {
+        // Check admin
+        if (!admins.includes(message.senderID)) {
+            return message.reply("❌ You are not authorized to use this command.");
+        }
+
+        if (!args[0] || !args[1]) {
+            return message.reply("Usage: `!ban <userID> [reason]` or `!unban <userID>`");
+        }
+
+        const action = args[0].toLowerCase();
+        const userID = args[1];
+        const reason = args.slice(2).join(" ") || "No reason provided";
+
+        let banData = loadBanData();
+
+        // Ban
+        if (action === "ban") {
+            if (banData[userID]) return message.reply(`⚠️ User ${userID} is already banned.`);
+            banData[userID] = {
+                reason: reason,
+                bannedBy: message.senderID,
+                bannedAt: new Date().toISOString(),
+            };
+            saveBanData(banData);
+            return message.reply(`✅ User ${userID} has been banned.\nReason: ${reason}`);
+        }
+
+        // Unban
+        else if (action === "unban") {
+            if (!banData[userID]) return message.reply(`⚠️ User ${userID} is not banned.`);
+            delete banData[userID];
+            saveBanData(banData);
+            return message.reply(`✅ User ${userID} has been unbanned.`);
+        }
+
+        // Invalid action
+        else {
+            return message.reply("❌ Invalid action. Use `ban` or `unban`.");
+        }
+    },
 };
