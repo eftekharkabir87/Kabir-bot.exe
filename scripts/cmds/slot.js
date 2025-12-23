@@ -1,125 +1,103 @@
-const cooldowns = new Map();
-const fs = require("fs");
-
-module.exports = {
+ module.exports = {
   config: {
     name: "slot",
-    version: "5.2",
-    author: "Kabir (Messenger Premium)",
-    shortDescription: "🎰 Premium Slot Machine for Messenger",
-    longDescription: "Spin the slot machine with dynamic fake animation ✨",
+    version: "2.0",
+    author: "Kabir",
+    shortDescription: { en: "Play a slot game" },
+    longDescription: { en: "Spin the slots and try your luck to win big!" },
     category: "game",
   },
 
   langs: {
     en: {
-      invalid_amount: "⚠️ Please enter a valid bet amount 💵",
-      not_enough_money: "💸 You don't have enough balance!",
-      max_limit: "🚫 Max bet is 200M",
-      limit_reached: "🕒 Slot limit reached. Retry in %1",
-      jackpot_message: "🎉 JACKPOT 🎉\nYou hit 3x ❤ and won $%1!\n[ %2 | %3 | %4 ]",
-      win_message: "🥳 WINNER 🥳\nYou won $%1!\n[ %2 | %3 | %4 ]",
-      lose_message: "😿 LOSER 😿\nYou lost $%1\n[ %2 | %3 | %4 ]",
-      spinning_message: "⏳ Spinning the reels..."
-    }
+      invalid_amount: "Enter a valid amount to bet 🌝.",
+      not_enough_money: "You don't have enough money 🌝🤣. Check your balance!",
+      spin_message: "Spinning... 🎰\n[ %1$ | %2$ | %3$ ]",
+      final_spin_message: "Final Spin! 🎰\n[ %1$ | %2$ | %3$ ]",
+      win_message: "You won %1$💗! Your luck is shining today!",
+      lose_message: "You lost %1$🥲. Better luck next time!",
+      jackpot_message: "JACKPOT!!! 🎉 You won %1$💎! You're unstoppable!",
+    },
   },
 
-  onStart: async function({ args, event, usersData, getLang, sendMessage, isPremium }) {
-    const senderID = event.senderID;
-    let amount = parseInt(args[0]);
+  onStart: async function ({ args, message, event, usersData, getLang, api }) {
+    const { senderID, threadID } = event;
+    const userData = await usersData.get(senderID) || { money: 500, data: {} };
+    const amount = parseInt(args[0]);
 
-    // Validate amount
-    if (isNaN(amount) || amount <= 0) return sendMessage(senderID, getLang("invalid_amount"));
-    if (amount > 100000000) return sendMessage(senderID, getLang("max_limit"));
+    if (isNaN(amount) || amount <= 0) return message.reply(getLang("invalid_amount"));
+    if (amount > userData.money) return message.reply(getLang("not_enough_money"));
 
-    const userData = await usersData.get(senderID);
-    if (amount > userData.money) return sendMessage(senderID, getLang("not_enough_money"));
+    const slots = ["🍒","🍇","🍊","🍉","🍋","🍎","🍓","🍑","🥝"];
+    const randomSlot = () => slots[Math.floor(Math.random() * slots.length)];
 
-    // Cooldown
-    const now = Date.now();
-    const limit = isPremium ? 50 : 20;
-    const interval = 60 * 60 * 1000;
-    if (!cooldowns.has(senderID)) cooldowns.set(senderID, []);
-    const timestamps = cooldowns.get(senderID).filter(ts => now - ts < interval);
-    if (timestamps.length >= limit) {
-      const nextUse = new Date(Math.min(...timestamps) + interval);
-      const diff = nextUse - now;
-      const hours = Math.floor(diff / (60 * 60 * 1000));
-      const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
-      return sendMessage(senderID, getLang("limit_reached", `${hours}h ${minutes}m`));
-    }
-    cooldowns.set(senderID, [...timestamps, now]);
+    // Initial placeholder
+    let slot1 = "❓", slot2 = "❓", slot3 = "❓";
+    const animationMsg = await message.reply(getLang("spin_message", slot1, slot2, slot3));
 
-    const finalResult = generateResult(isPremium);
-    const winnings = calculateWinnings(finalResult, amount, isPremium);
+    // ---------------- Emoji Reel Spin Animation ----------------
+    const spinReels = async () => {
+      let finalSlots = [randomSlot(), randomSlot(), randomSlot()];
+      let currentSlots = ["💎❓","🌹❓","🦥❓"];
 
-    // Update balance
+      for (let i = 0; i < 25; i++) { // total frames
+        // Reel 1 spins faster, Reel 2 medium, Reel 3 slower
+        currentSlots[0] = i < 20 ? slots[Math.floor(Math.random() * slots.length)] : finalSlots[0];
+        currentSlots[1] = i < 22 ? slots[Math.floor(Math.random() * slots.length)] : finalSlots[1];
+        currentSlots[2] = i < 25 ? slots[Math.floor(Math.random() * slots.length)] : finalSlots[2];
+
+        await new Promise(res => setTimeout(res, 150)); // 150ms per frame
+
+        // Update the same message
+        await api.editMessage(
+          getLang("spin_message", currentSlots[0], currentSlots[1], currentSlots[2]),
+          threadID,
+          animationMsg.messageID
+        );
+      }
+      return finalSlots;
+    };
+
+    // Run the animation and get final slots
+    const [slot1Final, slot2Final, slot3Final] = await spinReels();
+
+    // Show final spin message
+    await api.editMessage(
+      getLang("final_spin_message", slot1Final, slot2Final, slot3Final),
+      threadID,
+      animationMsg.messageID
+    );
+
+    // ---------------- Calculate Winnings ----------------
+    const winnings = calculateWinnings(slot1Final, slot2Final, slot3Final, amount);
+
+    // Update user money safely
     await usersData.set(senderID, {
       money: userData.money + winnings,
       data: userData.data
     });
 
-    // Fake Spin Animation (Messenger-friendly)
-    const slots = ["💚","💛","💙","💜","🤎","🤍","❤"];
-    let spinReels = [];
-    for (let i=0;i<3;i++) spinReels.push(slots[Math.floor(Math.random()*slots.length)]);
-
-    // Send spinning message first
-    let spinMessageID = await sendMessage(senderID, getLang("spinning_message"));
-
-    // Animate 8 cycles
-    for (let spinCount=0; spinCount<8; spinCount++){
-      spinReels = spinReels.map(()=>slots[Math.floor(Math.random()*slots.length)]);
-      await new Promise(res => setTimeout(res, 300)); // 0.3s delay
-      await sendMessage(senderID, `[ ${spinReels.join(" | ")} ]`);
-    }
-
-    // Final result
-    if (finalResult[0] === finalResult[1] && finalResult[1] === finalResult[2] && finalResult[0]==="❤")
-      await sendMessage(senderID, getLang("jackpot_message", formatMoney(Math.abs(winnings)), ...finalResult));
-    else if (winnings>0)
-      await sendMessage(senderID, getLang("win_message", formatMoney(Math.abs(winnings)), ...finalResult));
-    else
-      await sendMessage(senderID, getLang("lose_message", formatMoney(Math.abs(winnings)), ...finalResult));
-
-  }
+    // Send final result message
+    const finalMessage = getSpinResultMessage(slot1Final, slot2Final, slot3Final, winnings, getLang);
+    return message.reply(finalMessage);
+  },
 };
 
-// Functions
-function generateResult(isPremium){
-  const slots = ["💚","💛","💙","💜","🤎","🤍","❤"];
-  const r = Math.random()*100;
-  if (r < (isPremium?10:5)) return ["❤","❤","❤"];
-  if (r < (isPremium?25:20)){
-    const symbol = slots.filter(e=>e!=="❤")[Math.floor(Math.random()*6)];
-    return [symbol,symbol,symbol];
-  }
-  if (r<65){
-    const s = slots[Math.floor(Math.random()*slots.length)];
-    const r2 = slots[Math.floor(Math.random()*slots.length)];
-    return [s,s,r2];
-  }
-  while(true){
-    const [a,b,c] = [randomEmoji(slots),randomEmoji(slots),randomEmoji(slots)];
-    if(!(a===b && b===c)) return [a,b,c];
-  }
+// ======================= FUNCTIONS =======================
+
+function calculateWinnings(slot1, slot2, slot3, betAmount) {
+  if (slot1 === "🍒" && slot2 === "🍒" && slot3 === "🍒") return betAmount * 10;
+  if (slot1 === "🍇" && slot2 === "🍇" && slot3 === "🍇") return betAmount * 5;
+  if (slot1 === slot2 && slot2 === slot3) return betAmount * 3;
+  if (slot1 === slot2 || slot1 === slot3 || slot2 === slot3) return betAmount * 2;
+  return -betAmount;
 }
 
-function calculateWinnings([a,b,c],bet,isPremium){
-  const multiplier = isPremium?1.5:1;
-  if(a===b && b===c){
-    if(a==="❤") return bet*10*multiplier;
-    return bet*5*multiplier;
+function getSpinResultMessage(slot1, slot2, slot3, winnings, getLang) {
+  if (winnings > 0) {
+    if (slot1 === "🍒" && slot2 === "🍒" && slot3 === "🍒") return getLang("jackpot_message", winnings);
+    return getLang("win_message", winnings) + `\n[ ${slot1} | ${slot2} | ${slot3} ]`;
+  } else {
+    return getLang("lose_message", -winnings) + `\n[ ${slot1} | ${slot2} | ${slot3} ]`;
   }
-  if(a===b || b===c || a===c) return bet*3*multiplier;
-  return -bet;
-}
-
-function randomEmoji(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-function formatMoney(amount){
-  if(amount>=1e12) return (amount/1e12).toFixed(2)+"T";
-  if(amount>=1e9) return (amount/1e9).toFixed(2)+"B";
-  if(amount>=1e6) return (amount/1e6).toFixed(2)+"M";
-  if(amount>=1e3) return (amount/1e3).toFixed(2)+"K";
-  return amount.toString();
-}
+    }
