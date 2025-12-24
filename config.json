@@ -29,7 +29,7 @@
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
   "nickNameBot": "𝔽ℝ𝕀𝔻𝔸𝕐🐉",
-  "prefix": "/",
+  "prefix": ":",
   "database": {
     "type": "sqlite",
     "uriMongodb": "mongodb+srv://<db_username>:<db_password>@itachi007.prq6cy2.mongodb.net/?appName=Itachi007",
