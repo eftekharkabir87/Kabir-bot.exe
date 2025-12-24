@@ -391,4 +391,15 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                                 return matrix[b.length][a.length];
                                         }
                                         
+                                                                                                           matrix[i][j] = Math.min(
+                                                                                matrix[i - 1][j - 1] + 1,
+                                                                                matrix[i][j - 1] + 1,
+                                                                                matrix[i - 1][j] + 1
+                                                                        );
+                                                                }
+                                                        }
+                                                }
+                                                return matrix[b.length][a.length];
+                                        }
+                                        
                                    
